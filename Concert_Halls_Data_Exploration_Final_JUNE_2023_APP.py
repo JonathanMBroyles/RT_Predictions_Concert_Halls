@@ -4,11 +4,10 @@
 # In[1]:
 
 
-# By Jonathan Broyles (Fall 2021 - Spring 2023)
+# By Jonathan Broyles (Spring 2023)
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import openpyxl as pyxl
 import seaborn as sns
 import matplotlib.patches as mpatches
@@ -45,55 +44,6 @@ Hall_labels = ["Shoebox", "Fan", "Oval", "Vineyard", "Hexagon", "Octagon", "Othe
 Hall_numbers = [21,14,6,3,2,2,2]
 
 
-plt.figure(figsize=(8,8))
-
-patches, texts, autotexts  = plt.pie(
-    x=Hall_numbers, 
-    labels=Hall_labels,
-    # show percentage with two decimal points
-    autopct='%1.0f%%',
-    # increase the size of all text elements
-    textprops={'fontsize':14},
-    startangle=180,
-    counterclock=False,
-    colors = sns.color_palette('Spectral_r', 7),
-    explode=[0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02],
-#     labeldistance=0.85,
-    # Distance of percent labels from the center
-#     pctdistance=0.6
-)
-
-plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
-plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
-
-# # Customize text labels
-# for text in texts:
-#     text.set_horizontalalignment('center')
-
-texts[0].set_fontsize(20)
-texts[1].set_fontsize(20)
-texts[2].set_fontsize(20)
-texts[3].set_fontsize(20)
-texts[4].set_fontsize(20)
-texts[5].set_fontsize(20)
-texts[6].set_fontsize(20)
-
-# Customize percent labels
-for autotext in autotexts:
-    autotext.set_horizontalalignment('center')
-    autotext.set_fontstyle('italic')
-
-# # Add Title 
-# plt.title(
-#     label="Population Distribution By Age Groups", 
-#     fontdict={"fontsize":16},
-#     pad=20
-# )
-
-plt.savefig("Concert Hall Type Breakdown.png", dpi = 1200)
-plt.show()
-
-
 # # Random Forest Model
 
 # In[5]:
@@ -105,15 +55,6 @@ from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from sklearn.tree import DecisionTreeClassifier
-
-
-# In[6]:
-
-
-df
-
-
-# In[7]:
 
 
 df_clean_RF_x = df[["Seating Capacity", "Room Volume m^3", "Surface Area m^2", "Noise Level Number", "Ceiling Alpha", "Wall Alpha","Floor Alpha", "Hall Type Number"]] #, "Stage Area m^2", "Noise Level Number"
@@ -132,276 +73,16 @@ X_train, X_test, y_train, y_test = train_test_split(df_clean_RF_x, df_clean_RF_y
 rf_RT = RandomForestRegressor()
 
 
-# In[10]:
-
-
-from sklearn.model_selection import GridSearchCV
-
-# Create the parameter grid based on the results of random search 
-param_grid = {
-    'bootstrap': [True],
-    'max_depth': [80, 90, 100, 110],
-    'max_features': [2, 3, 4, 5, 6],
-    'min_samples_leaf': [3, 4, 5, 6],
-    'min_samples_split': [8, 10, 12],
-    'n_estimators': [100, 200, 300, 400, 500, 1000, 2500, 5000]
-}
-
-
 
 rf_RT_best = RandomForestRegressor(bootstrap = True, max_depth = 100, max_features = 3, min_samples_leaf = 5, min_samples_split = 12,
                                    n_estimators = 500)
 rf_RT_best.fit(X_train.values, y_train)
 
 
-# In[76]:
-
-
 y_pred = rf_RT_best.predict(X_test.values)
 
 
-# In[77]:
 
-
-headers = ["Seating Capacity", "Room Volume", "Room Surface Area", "NC-Level", r"Ceiling $\alpha$",  r"Wall $\alpha$",  r"Floor $\alpha$", "Hall Type"]
-#headers = list(df_clean_RF_x.columns)
-
-fig = plt.figure(figsize = (9, 7))
-sorted_idx = rf_RT_best.feature_importances_.argsort()
-
-imps = rf_RT_best.feature_importances_[sorted_idx]
-my_cmap = plt.get_cmap("plasma_r")
-rescale = lambda imps: (imps - np.min(imps)) / (np.max(imps) - np.min(imps))
-
-plt.barh(np.array(headers)[sorted_idx], rf_RT_best.feature_importances_[sorted_idx], color=my_cmap(rescale(imps)), edgecolor = "dimgray", alpha = 0.85)
-
-#plt.barh(np.array(headers), rf.feature_importances_)
-
-plt.xlabel("Random Forest Feature Importance")
-plt.title("Parameter Importance for Predicting RT-500")
-
-plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
-plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
-
-#plt.savefig("Concert Hall Predicting RT - Parameter Importance using Random Forests Final.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
-plt.show()
-
-
-# In[78]:
-
-
-r2_score(y_test, y_pred)
-
-
-# In[79]:
-
-
-rf_RT_best.score(X_train.values, y_train)
-
-
-# In[80]:
-
-
-# Performance metrics
-errors = abs(y_pred - y_test)
-print('Metrics for Random Forest Trained on Original Data')
-print('Average RT absolute error:', round(np.mean(errors), 2), 'seconds.')
-
-# Calculate mean absolute percentage error (MAPE)
-mape = 100 * (errors / y_test)
-
-# Calculate and display accuracy
-accuracy = 100 - np.mean(mape)
-print('Accuracy:', round(accuracy, 2), '%.')
-
-RMSE = mean_squared_error(y_test, y_pred, squared = False)
-NRMSE = RMSE / (max(df["RT - 500 Hz Unocc"]) - min(df["RT - 500 Hz Unocc"]))
-print('RMSE:', round(RMSE, 2))
-print('NRMSE:', round(NRMSE, 2))
-
-
-# # Compare the RT-Regression Model to Other Analytical EQs
-
-# In[81]:
-
-
-Reported_RT = df_clean_RF_x
-
-
-# In[82]:
-
-
-Sabine_RT = df["Sabine RT Calc"]
-Norris_Eyring_RT = df["Norris-Eyring EQ"]
-
-
-# In[83]:
-
-
-RF_preds = rf_RT_best.predict(Reported_RT)
-num_halls = range(1,(len(RF_preds)+1))
-
-RF_Perc_Errs = []
-for i in range(len(RF_preds)):
-    dummy = abs((df_clean_RF_y[i] - RF_preds[i]) / df_clean_RF_y[i]) * 100
-    RF_Perc_Errs.append(dummy)
-
-
-# In[84]:
-
-
-plt.scatter(num_halls, df_clean_RF_y, color = "blue", label = "Reported RT", zorder = 8)
-plt.scatter(num_halls, RF_preds, color = "orange", label = "Random Forest")
-plt.scatter(num_halls, Sabine_RT, color = "peru", label = "Sabine EQ")
-plt.scatter(num_halls, Norris_Eyring_RT, color = "yellowgreen", label = "Norris-Eyring EQ")
-
-plt.ylim([0.5,3.5])
-plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
-plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
-
-plt.ylabel("Mid-Frequency Reverberation Time", fontsize = 12)
-
-plt.legend()
-plt.show
-
-
-# In[85]:
-
-
-Sabine_Perc_Errs = df["Percent Error 1"]
-Norris_Eyring_Perc_Errs = df["Percent Error 2"]
-
-
-# In[86]:
-
-
-RF_Perc_Errs = np.array(RF_Perc_Errs)
-print("RF Average Error = " + str(np.mean(RF_Perc_Errs)) + " %")
-
-Sabine_Perc_Errs = np.array(Sabine_Perc_Errs)
-print("Sabine EQ Average Error = " + str(np.mean(Sabine_Perc_Errs)) + " %")
-
-Norris_Eyring_Perc_Errs = np.array(Norris_Eyring_Perc_Errs)
-print("Norris Eyring EQ Average Error = " + str(np.mean(Norris_Eyring_Perc_Errs)) + " %")
-
-
-# In[87]:
-
-
-x = np.arange(50)
-
-
-# In[88]:
-
-
-num_halls = np.array(num_halls)
-
-
-# In[89]:
-
-
-# plot data in grouped manner of bar type
-fig = plt.figure(figsize = (10, 6))
-
-colors = ['#66b3ff','#ffcc99','#99ff99']
-
-width = 0.2
-plt.bar(num_halls-0.2, RF_Perc_Errs, width, color = "#66b3ff", edgecolor = "dimgray", label = "Random Forest", alpha = 1, zorder = 8)
-plt.bar(num_halls, Sabine_Perc_Errs, width, color = "#ffcc99", edgecolor = "dimgray", label = "Sabine EQ", alpha = 0.8)
-plt.bar(num_halls+0.2, Norris_Eyring_Perc_Errs, width, color = "#99ff99", edgecolor = "dimgray", label = "Norris-Eyring EQ", alpha = 0.8)
-
-
-plt.ylim([0,70])
-plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
-plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
-
-plt.xticks([])
-plt.xlabel("Concert Hall", fontsize = 12)
-plt.ylabel("Percent Error", fontsize = 12)
-plt.legend(loc = "upper left", fontsize = 14, edgecolor = "white")
-
-#plt.savefig("Percent Errors Final.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
-plt.show()
-
-
-# In[102]:
-
-
-fig = plt.figure(figsize = (10, 6))
-
-plt.scatter(num_halls, RF_Perc_Errs, marker = "d", color = "mediumseagreen", s = 70, label = "Random Forest", zorder = 8)
-plt.scatter(num_halls, Sabine_Perc_Errs, marker = "o", color = "steelblue", s = 55, label = "Sabines EQ", zorder = 4)
-plt.scatter(num_halls, Norris_Eyring_Perc_Errs, marker = "s", color = "goldenrod", s = 50, label = "Norris-Eyring EQ", zorder= 2)
-
-plt.vlines(x = [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5,12.5,13.5,14.5,15.5,16.5,17.5,18.5,19.5,20.5,
-               21.5,22.5,23.5,24.5,25.5,26.5,27.5,28.5,29.5,30.5,31.5,32.5,33.5,34.5,35.5,36.5,37.5,38.5,39.5,
-               40.5,41.5,42.5,43.5,44.5,45.5,46.5,47.5,48.5,49.5,50.5], ymin = -3, ymax = 70, color = "gray", linewidth = 0.33)
-
-plt.hlines(y = 20, xmin = -1, xmax = 52, color = "gray", linewidth = 0.33, zorder = 1)
-
-plt.xlim([-1,52])
-plt.ylim([-3,70])
-plt.gca().invert_yaxis()
-
-
-plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
-plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
-
-plt.xticks([])
-plt.xlabel("Concert Hall", fontsize = 12)
-plt.ylabel("Percent Error (%)", fontsize = 12)
-plt.legend(loc = "lower left", fontsize = 14, edgecolor = "dimgray", facecolor = "white")
-
-#plt.savefig("Percent Errors Scatterplot.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
-plt.show()
-
-
-# In[91]:
-
-
-best_model = []
-labells = []
-
-for i in range(len(RF_Perc_Errs)):
-    if min(RF_Perc_Errs[i], Sabine_Perc_Errs[i], Norris_Eyring_Perc_Errs[i]) == RF_Perc_Errs[i]:
-        dummy = 0
-        lab = "Random Forest Model"
-    elif min(RF_Perc_Errs[i], Sabine_Perc_Errs[i], Norris_Eyring_Perc_Errs[i]) == Sabine_Perc_Errs[i]:
-        dummy = 1
-        lab = "Sabine EQ"
-    elif min(RF_Perc_Errs[i], Sabine_Perc_Errs[i], Norris_Eyring_Perc_Errs[i]) == Norris_Eyring_Perc_Errs[i]:
-        dummy = 2
-        lab = "Norris-Eyring EQ"
-    print(str(i+1) + ": " + str(dummy))
-    best_model.append(dummy)
-    labells.append(lab)
-
-
-# In[103]:
-
-
-best_modell = [25, 16, 9]
-
-
-# In[105]:
-
-
-labels = ["Random Forest", "Sabine EQ", "Norris-Eyring EQ"]
-
-my_explode = (0.02, 0.01, 0.01)
-colors = ['mediumseagreen','steelblue','goldenrod']
-
-# Creating plot
-fig = plt.figure(figsize =(10, 7))
-patches, texts, pcts = plt.pie(best_modell, labels = labels, startangle = 90, autopct='%1.0f%%',  colors = colors, explode=my_explode, textprops = {"fontsize": 13}, wedgeprops = {"linewidth": 1, "edgecolor": "white"})
-#plt.title("The best RT prediction is obtained by:", fontsize = 13)
-plt.setp(pcts, color='white', fontweight='bold', fontsize = "xx-large")
-plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
-plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
-
-# show plot
-#plt.savefig("Best Prediction Pie Chart.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
-plt.show()
 
 
 # # Deployment of the RF Model as an Interactive Design Tool
