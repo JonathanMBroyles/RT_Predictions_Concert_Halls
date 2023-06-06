@@ -148,63 +148,6 @@ param_grid = {
 }
 
 
-# In[11]:
-
-
-# Instantiate the grid search model
-grid_search = GridSearchCV(estimator = rf_RT, param_grid = param_grid, 
-                          cv = 5, n_jobs = -1, verbose = 2)
-
-
-# In[12]:
-
-
-# Fit the grid search to the data
-grid_search.fit(X_train.values, y_train)
-grid_search.best_params_
-
-%%time
-
-
-# In[16]:
-
-
-grid_search.best_params_
-
-
-# In[13]:
-
-
-def evaluate(model, X_test, y_test):
-    predictions = model.predict(X_test.values)
-    errors = abs(predictions - y_test)
-    mape = 100 * np.mean(errors / y_test)
-    accuracy = 100 - mape
-    print('Model Performance')
-    print('Average Error: {:0.4f} seconds.'.format(np.mean(errors)))
-    print('Accuracy = {:0.2f}%.'.format(accuracy))
-    
-    return accuracy
-base_model = RandomForestRegressor(n_estimators = 10, random_state = 42)
-base_model.fit(X_train.values, y_train)
-base_accuracy = evaluate(base_model, X_test, y_test)
-
-
-# In[14]:
-
-
-best_grid = grid_search.best_estimator_
-grid_accuracy = evaluate(best_grid, X_test, y_test)
-
-
-# In[15]:
-
-
-print('Improvement of {:0.2f}%.'.format( 100 * (grid_accuracy - base_accuracy) / base_accuracy))
-
-
-# In[75]:
-
 
 rf_RT_best = RandomForestRegressor(bootstrap = True, max_depth = 100, max_features = 3, min_samples_leaf = 5, min_samples_split = 12,
                                    n_estimators = 500)
@@ -240,7 +183,7 @@ plt.title("Parameter Importance for Predicting RT-500")
 plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
 plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
 
-plt.savefig("Concert Hall Predicting RT - Parameter Importance using Random Forests Final.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
+#plt.savefig("Concert Hall Predicting RT - Parameter Importance using Random Forests Final.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
 plt.show()
 
 
@@ -377,7 +320,7 @@ plt.xlabel("Concert Hall", fontsize = 12)
 plt.ylabel("Percent Error", fontsize = 12)
 plt.legend(loc = "upper left", fontsize = 14, edgecolor = "white")
 
-plt.savefig("Percent Errors Final.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
+#plt.savefig("Percent Errors Final.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
 plt.show()
 
 
@@ -409,7 +352,7 @@ plt.xlabel("Concert Hall", fontsize = 12)
 plt.ylabel("Percent Error (%)", fontsize = 12)
 plt.legend(loc = "lower left", fontsize = 14, edgecolor = "dimgray", facecolor = "white")
 
-plt.savefig("Percent Errors Scatterplot.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
+#plt.savefig("Percent Errors Scatterplot.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
 plt.show()
 
 
@@ -457,7 +400,7 @@ plt.rcParams['font.sans-serif'] = "Arial" # Could do Times New Roman, others...
 plt.rcParams['font.family'] = "Arial" # Could do Times New Roman, others...
 
 # show plot
-plt.savefig("Best Prediction Pie Chart.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
+#plt.savefig("Best Prediction Pie Chart.pdf", dpi = 1200, bbox_inches='tight', pad_inches=0.5,)
 plt.show()
 
 
@@ -482,6 +425,7 @@ import dash_bootstrap_components as dbc
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(external_stylesheets=[dbc.themes.YETI]) # , external_stylesheets=external_stylesheets
+server = app.server
 
 app.layout = html.Div([
     html.H1("Estimating the Mid-Frequency Reverberation Time of Concert Halls \n(Version 1.0)", style = {"textAlign": "center"}),
